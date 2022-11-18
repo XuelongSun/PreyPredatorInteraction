@@ -31,6 +31,7 @@ class Agent:
     def __init__(self, uuid, init_heading, init_position,
                  raduis=10, height=5, color=(135, 206, 235)):
         self.id = uuid
+        self.cluster_id = None
 
         # motion
         self.linear_velocity = 0.0
@@ -38,6 +39,8 @@ class Agent:
         self.position = np.array(init_position, np.float32)
         self.heading = init_heading
         
+        self.collision = False
+        self.collision_theta = 0
         
         # scale
         self.size = raduis
@@ -66,6 +69,11 @@ class Agent:
         elif self.collision_obstacles(obstacles):
             self.angular_velocity = np.random.vonmises(3*np.pi/4, 100.0, 1)[0]
         
+        if self.collision:
+            # completely inelastic collision
+            self.linear_velocity *= np.sin(self.heading - self.collision_theta)
+            self.angular_velocity -= self.collision_theta
+
         self.heading += self.angular_velocity
         # scale to -pi~pi
         self.heading = (self.heading + np.pi) % (np.pi*2) - np.pi
@@ -123,7 +131,8 @@ class Prey(Agent):
         self.hsv_l = (self.body_color_hsv[0] - 5, 50, 50)
         self.hsv_h = (self.body_color_hsv[0] + 5, 255, 255)
         self.thr_start_pixel_num = 10
-        self.thr_stop_pixel_num = 6000
+        self.thr_stop_pixel_num = 8000
+        self.max_pixel_num = 2e4
         self.f_size = 0
         
         # olfactory based control
@@ -171,7 +180,9 @@ class Prey(Agent):
             hsv = cv2.cvtColor(self.view, cv2.COLOR_RGB2HSV)
             img_f = cv2.inRange(hsv, self.hsv_l, self.hsv_h)
             size = img_f.sum()/255
-            if  size >= self.thr_stop_pixel_num:
+            if size >= self.max_pixel_num:
+                self.state = 'wandering'
+            elif size >= self.thr_stop_pixel_num:
                 self.state = 'stop'
             elif size >= self.f_gather:
                 self.state = 'gathering'
@@ -219,10 +230,18 @@ class Predator(Agent):
         super().__init__(uuid, init_heading, init_position, color=(200, 0, 20))
         self.phero_radius = 40
         
-    def update(self, dt, phero_f, boundary):
+    def update(self, dt, phero_f, boundary, cluster):
         self.linear_velocity = 4
-        # depend on the visual input
         self.angular_velocity = np.random.vonmises(0.0, 100.0, 1)[0]
+        # found cluster withe highest density
+        _, v = sorted(cluster.items(), key=lambda v:len(v[1]))[-1]
+        # if cluster size >= 5
+        if len(v) >= 5:
+            px = np.array([a.position[0] for a in v]).mean()
+            py = np.array([a.position[1] for a in v]).mean()
+            goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
+            self.angular_velocity = goal_dir - self.heading + np.pi
+
         self.update_motion(boundary, None)
 
 

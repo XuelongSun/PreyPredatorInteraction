@@ -1,4 +1,6 @@
 from threading import Thread
+from itertools import combinations
+import scipy.io as sio
 import time
 from matplotlib.pyplot import show
 
@@ -8,9 +10,13 @@ import pyrender as pr
 
 from agent import Prey, Predator, scene3d
 from pheromone import Pheromone
-from utils import world2image_coordinates_transfer
+from utils import world2image_coordinates_transfer, distance
 from utils import DataServer
 
+RESULT_FOLDER = 'results/'
+
+EXP_NAME = 'test'
+    
 class Environment:
     def __init__(self, width, height, boundary, dt, obstacles=None):
         self.pheromone = Pheromone(width, height, dt)
@@ -58,9 +64,17 @@ class Simulator(Thread):
 
         
         self.preys = []
-        for i in range(32):
+        for i in range(30):
             h = np.random.vonmises(0, 100, 1)[0]
-            pos = [np.random.randint(30, width-30), np.random.randint(30, height-30)] 
+            f = False
+            while not f:
+                f = True
+                pos = [np.random.uniform(30, width-30),
+                   np.random.uniform(30, height-30)]
+                for b in self.preys:
+                    if distance(pos, b.position) <= b.size*2:
+                        f = False
+                        break
             self.preys.append(Prey(i, h, pos))
         
         self.alive_preys = self.preys.copy()
@@ -82,8 +96,95 @@ class Simulator(Thread):
                                       'predator':(200, 0, 20)}
         self.visualize_obstacle_color = (125,125,125)
         
+        self.cluster = {}
+        
         # transfer data
         self.debug_data = {}
+        
+        # save data
+        self.data_to_save = []
+    
+    def get_collide_agents(self, agent:Prey):
+        a_ = []
+        for a in self.alive_preys:
+            if not a.collision:
+                a_.append(a)
+
+        co_ = [] # for collision
+        co_theta = []
+        for a in a_:
+            if a is not agent:
+                if distance(a.position, agent.position) <= (a.size + agent.size)*1.1:
+                    co_.append(a)
+                    co_theta.append(np.arctan2((a.position[1] - a.position[1]),
+                                               (a.position[0] - a.position[0])))
+        return co_, co_theta
+    
+    def get_near_agents(self, agent:Prey):
+        a_ = []
+        for a in self.alive_preys:
+            if a.cluster_id is None:
+                a_.append(a)
+                
+        cl_ = [] # for cluster
+        for a in a_:
+            if a is not agent:
+                if distance(a.position, agent.position) <= (a.size + agent.size)*2:
+                    cl_.append(a)
+        return cl_
+    
+    def arange_cluster(self):
+        c_avg = {}
+        for ind, ags in self.cluster.items():
+            if len(ags) >=2:
+                avg_x = np.array([a.position[0] for a in ags]).mean()
+                avg_y = np.array([a.position[1] for a in ags]).mean()
+                c_avg.update({ind:[avg_x, avg_y]})
+
+        for c_c in combinations(c_avg.keys(), 2):
+            if distance(c_avg[c_c[0]], c_avg[c_c[1]]) <= 40:
+                # merge cluster
+                self.cluster[c_c[0]] += self.cluster[c_c[1]]
+                for m_a in self.cluster[c_c[1]]:
+                    m_a.cluster_id = c_c[0]
+                self.cluster.pop(c_c[1])
+    
+    def arange_cluster_rectangle(self):
+        rect = {}
+        margin = 12
+        for ind, ags in self.cluster.items():
+            if len(ags) >=2:
+                x = np.array([a.position[0] for a in ags])
+                y = np.array([a.position[1] for a in ags])
+                rect.update({ind:[x.min()-margin, x.max()+margin,
+                                  y.min()-margin, y.max()+margin]})
+        
+        for c_c in combinations(rect.keys(), 2):
+            r1l = rect[c_c[1]][0]
+            r1r = rect[c_c[1]][1]
+            r2l = rect[c_c[0]][0]
+            r2r = rect[c_c[0]][1]
+            r1b = rect[c_c[1]][2]
+            r1t= rect[c_c[1]][3]
+            r2b = rect[c_c[0]][2]
+            r2t = rect[c_c[0]][3]
+
+            if not ((r1l > r2r) or (r1t < r2b) or (r2l > r1r) or (r2t < r1b)):
+                for m_a in self.cluster[c_c[1]]:
+                    m_a.cluster_id = c_c[0]
+            
+        self.cluster = {}
+        for b in self.alive_preys:
+            if b.cluster_id in self.cluster.keys():
+                self.cluster[b.cluster_id].append(b)
+            elif b.cluster_id is not None:
+                self.cluster.update({b.cluster_id:[b]})
+                    
+    def clear_cluster_collision_info(self):
+        self.cluster = {}
+        for b in self.alive_preys:
+            b.cluster_id = None
+            b.collision = False
     
     def visualization2d(self, show_agent=()):
         # pheromone
@@ -109,10 +210,14 @@ class Simulator(Thread):
                 if a.id in show_agent:
                     state_str = "{}: {}".format(a.id, a.state[0])
                 # state_str = "{}: {}/{:.2f}".format(a.id, a.state[0], a.energy)
-                    self.visualize_img = cv2.putText(self.visualize_img, state_str,
-                                                    (p[1], p[0]-a.size*2), cv2.FONT_HERSHEY_SIMPLEX,
-                                                    0.5, (255,255,255))
+                    # self.visualize_img = cv2.putText(self.visualize_img, state_str,
+                    #                                 (p[1], p[0]-a.size*2), cv2.FONT_HERSHEY_SIMPLEX,
+                    #                                 0.5, (255,255,255))
                     cv2.imshow('{}_view'.format(a.id), cv2.cvtColor(a.view, cv2.COLOR_RGB2BGR))
+                # state_str = "{}: {},[{}]".format(a.id, a.state[0], a.cluster_id)
+                self.visualize_img = cv2.putText(self.visualize_img, str(a.cluster_id),
+                                (p[1], p[0]-a.size*2), cv2.FONT_HERSHEY_SIMPLEX,
+                                0.5, (255,255,255))
             else:
                 self.visualize_img = cv2.drawMarker(self.visualize_img, p[::-1],
                                                     (100,100,100),
@@ -135,6 +240,17 @@ class Simulator(Thread):
                                                  thickness=2)
         cv2.imshow('Simulation', cv2.cvtColor(self.visualize_img, cv2.COLOR_RGB2BGR))
     
+    def save_experiment_data(self):
+        filename = RESULT_FOLDER + EXP_NAME + '.mat'
+        try:
+            file = sio.loadmat(filename)
+            save_dict = {'data': np.vstack([file['data'], self.data_to_save])}
+        except:
+            # create a new mat file
+            save_dict = {'data':self.data_to_save}
+        sio.savemat(filename, save_dict)
+        self.data_to_save = []
+        
     def run(self):
         self.time = 0
         end_condition = True if self.time_out is None else (self.time <= self.time_out*1000)
@@ -146,7 +262,26 @@ class Simulator(Thread):
             # update prey's state
             prey_pos = []
             energy = []
+            self.clear_cluster_collision_info()
             for pe in self.alive_preys:
+                # cluster
+                if pe.cluster_id is None:
+                    # belong to a new cluster
+                    a = self.get_near_agents(pe)
+                    pe.cluster_id = len(self.cluster.keys()) + 1
+                    self.cluster.update({pe.cluster_id:a + [pe]})
+                    for a_ in a:
+                        a_.cluster_id = pe.cluster_id
+                self.arange_cluster_rectangle()
+                # collision
+                if not pe.collision:
+                    c, c_theta = self.get_collide_agents(pe)
+                    if c:
+                        pe.collision = True
+                        pe.collision_theta = c_theta[0]
+                        for c_, theta_ in zip(c, c_theta):
+                            c_.collision = True
+                            c_.collision_theta = theta_
                 pe.update(self.dt, self.environment.pheromone.field, self.environment.boundary)
                 # print(pe.position, self.environment.boundary)
                 p = world2image_coordinates_transfer(pe.position,
@@ -181,12 +316,13 @@ class Simulator(Thread):
                     self.preys.append(t_prey)
                     self.alive_preys.append(t_prey)
                     
-                    print(len(self.alive_preys), len(self.dead_preys), len(self.preys))
+                    # print(len(self.alive_preys), len(self.dead_preys), len(self.preys))
 
             # render pheromone
             predator_pos = []
             for pd in self.predators:
-                pd.update(self.dt, self.environment.pheromone.field, self.environment.boundary)
+                pd.update(self.dt, self.environment.pheromone.field, self.environment.boundary,
+                          self.cluster)
                 p = world2image_coordinates_transfer(pd.position,
                                                     self.environment.boundary)
                 predator_pos.append(p)
@@ -201,18 +337,30 @@ class Simulator(Thread):
                 break
             
             # debug data
+ 
             self.debug_data['energy'] = energy
             self.debug_data['f_avoid'] = [a.f_avoid for a in self.alive_preys]
             self.debug_data['f_gather'] = [a.f_gather for a in self.alive_preys]
+            
+            # save data
+            d = np.zeros([len(self.alive_preys), 7])
+            for i, a in enumerate(self.alive_preys):
+                d[i] = np.array(([a.id, a.energy, a.f_avoid, a.f_gather,
+                                  a.position[0], a.position[1], a.heading]))
+    
+            self.data_to_save.append(list(d))
+
+            if self.time % 100 < self.dt:
+                self.save_experiment_data()
+            
             self.time += self.dt
 
 
 if __name__ == "__main__":
-    ARENA_WIDTH = 240
-    ARENA_HEIGHT = 240
+    ARENA_WIDTH = 400
+    ARENA_HEIGHT = 400
     ARENA_LOCATION = [0, 0]
     TIMEOUT = 10
-    
     
     sim = Simulator(TIMEOUT, ARENA_LOCATION,
                     ARENA_WIDTH, ARENA_HEIGHT)
