@@ -41,6 +41,7 @@ class Agent:
         
         self.collision = False
         self.collision_theta = 0
+        self.collision_counter = 0
         
         # scale
         self.size = raduis
@@ -58,31 +59,50 @@ class Agent:
         self.time = 0
 
     def update_motion(self, boundary, obstacles):
-        # if at  the arena boundary
-        if (self.position[0] < boundary[0] + self.size) or \
-            (self.position[0] > boundary[1] - self.size) or \
-                (self.position[1] < boundary[2] + self.size) or \
-                    (self.position[1] > boundary[3] - self.size):
-                        # sharp turn
-                        self.linear_velocity = self.size
-                        self.angular_velocity = np.random.vonmises(3*np.pi/4, 100.0, 1)[0]
-        elif self.collision_obstacles(obstacles):
-            self.angular_velocity = np.random.vonmises(3*np.pi/4, 100.0, 1)[0]
-        
-        if self.collision:
-            # completely inelastic collision
-            self.linear_velocity *= np.sin(self.heading - self.collision_theta)
-            self.angular_velocity -= self.collision_theta
+        # if still in collision
+        if self.collision_counter > 0:
+            self.linear_velocity = 2
+            self.angular_velocity = 0
+            self.collision_counter -= 1
+        else:
+            # if at  the arena boundary
+            if (self.position[0] < boundary[0] + self.size) or \
+                (self.position[0] > boundary[1] - self.size) or \
+                    (self.position[1] < boundary[2] + self.size) or \
+                        (self.position[1] > boundary[3] - self.size):
+                            # sharp turn
+                            self.collision_counter = 20
+                            self.linear_velocity = 1.2
+                            # if (abs(self.heading) < 0.1 and self.position[1] >= boundary[3] - 2*self.size) or \
+                            #     (abs(self.heading - np.pi) < 0.1 and self.position[1] <= boundary[2] + 2*self.size) or\
+                            #         (abs(self.heading + np.pi/2) < 0.1 and self.position[0] <= boundary[0] + 2*self.size) or\
+                            #             (abs(self.heading - np.pi/2) < 0.1 and self.position[0] >= boundary[1] - 2*self.size):
+                            #                 self.angular_velocity = np.pi/2
+                            # elif (abs(self.heading-np.pi) < 0.1 and self.position[1] >= boundary[3] - 2*self.size) or \
+                            #     (abs(self.heading) < 0.1 and self.position[1] <= boundary[2] + 2*self.size) or\
+                            #         (abs(self.heading - np.pi/2) < 0.1 and self.position[0] <= boundary[0] + 2*self.size) or\
+                            #             (abs(self.heading + np.pi/2) < 0.1 and self.position[0] >= boundary[1] - 2*self.size):
+                            #                 self.angular_velocity = -np.pi/2
+                            # else:
+                            #     self.angular_velocity = np.random.vonmises(3*np.pi/4, 100.0, 1)[0]
+                            self.angular_velocity = np.random.uniform(np.pi/2, np.pi)
+            elif self.collision_obstacles(obstacles):
+                self.angular_velocity = np.random.vonmises(3*np.pi/4, 100.0, 1)[0]
+            
+            if self.collision:
+                # completely inelastic collision
+                self.linear_velocity *= np.sin(self.heading - self.collision_theta)
+                self.angular_velocity -= self.collision_theta
 
         self.heading += self.angular_velocity
         # scale to -pi~pi
         self.heading = (self.heading + np.pi) % (np.pi*2) - np.pi
         self.position += self.linear_velocity * np.array([np.cos(self.heading),
-                                                          np.sin(self.heading)])
-        
+                                                        np.sin(self.heading)])
+        # print('position:',self.position)
         # update visual object in 3d scene
         pose = calculate_pose_matrix({'z':self.heading-np.pi/2},
-                                     [self.position[0], self.position[1], 0])
+                                    [self.position[0], self.position[1], 0])
         scene3d.set_pose(self.node3d, pose=pose)
         
     
@@ -120,8 +140,8 @@ class Prey(Agent):
         # self.f_gather = np.random.rand(1)[0] * 10 + 5
         # self.f_avoid = np.random.rand(1)[0] * 0.5 + 0.1
         
-        self.f_gather = np.random.randn(1)[0] * 1.2 + 10
-        self.f_avoid = (np.random.randn(1)[0] * 1.2 + 3.5)/10
+        self.f_gather = np.random.uniform(0.02, 0.32)
+        self.f_avoid = np.random.uniform(0.01,1.01)
         
         self.odor_sensors_positions = np.array([[0, self.size/2], [0, -self.size/2]])
         self.view = np.zeros([IMAGE_HEIGHT, IMAGE_WIDTH, 3], np.uint8)
@@ -130,9 +150,9 @@ class Prey(Agent):
         # visual based control
         self.hsv_l = (self.body_color_hsv[0] - 5, 50, 50)
         self.hsv_h = (self.body_color_hsv[0] + 5, 255, 255)
-        self.thr_start_pixel_num = 10
-        self.thr_stop_pixel_num = 8000
-        self.max_pixel_num = 2e4
+        self.thr_start_pixel_num = 0.05
+        self.thr_stop_pixel_num = 0.4
+        self.max_pixel_num = 0.7
         self.f_size = 0
         
         # olfactory based control
@@ -179,7 +199,8 @@ class Prey(Agent):
             # find if there is interesting color in the view
             hsv = cv2.cvtColor(self.view, cv2.COLOR_RGB2HSV)
             img_f = cv2.inRange(hsv, self.hsv_l, self.hsv_h)
-            size = img_f.sum()/255
+            size = img_f.sum()/7650000
+            # print('size:', size)
             if size >= self.max_pixel_num:
                 self.state = 'wandering'
             elif size >= self.thr_stop_pixel_num:
@@ -196,7 +217,7 @@ class Prey(Agent):
         if self.state == 'avoiding':
             f = np.max([self.energy * 0.1, 4])
             self.energy -= f * dt / 1000
-            self.linear_velocity = np.min([f, 4])
+            self.linear_velocity = np.min([f, 2.4])
             
             odor_old = self.odor_sensor_l_values[-2] + self.odor_sensor_r_values[-2]
             odor_now = self.odor_sensor_l_values[-1] + self.odor_sensor_r_values[-1]
@@ -229,18 +250,31 @@ class Predator(Agent):
     def __init__(self, uuid, init_heading, init_position):
         super().__init__(uuid, init_heading, init_position, color=(200, 0, 20))
         self.phero_radius = 40
-        
-    def update(self, dt, phero_f, boundary, cluster):
         self.linear_velocity = 4
+        self.goal_defined = False
+        
+    def update(self, boundary, cluster, num_prey):
         self.angular_velocity = np.random.vonmises(0.0, 100.0, 1)[0]
-        # found cluster withe highest density
-        _, v = sorted(cluster.items(), key=lambda v:len(v[1]))[-1]
+        # found cluster with highest density
+        sorted_c = sorted(cluster.items(), key=lambda v:len(v[1]))
+        _, v1 = sorted_c[-1]
+        v2 = [] if len(sorted_c) <=1 else sorted_c[-2][1]
         # if cluster size >= 5
-        if len(v) >= 5:
-            px = np.array([a.position[0] for a in v]).mean()
-            py = np.array([a.position[1] for a in v]).mean()
-            goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
-            self.angular_velocity = goal_dir - self.heading + np.pi
+        if len(v1) >= 5:
+            if len(v1) >= num_prey - 2:
+                i = np.random.randint(0, len(v1))
+                px = v1[i].position[0]
+                py = v1[i].position[1]
+                goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
+            else:
+                if len(v1) == len(v2) and self.goal_defined:
+                    self.angular_velocity = 0
+                else:
+                    px = np.array([a.position[0] for a in v1]).mean()
+                    py = np.array([a.position[1] for a in v1]).mean()
+                    goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
+                    self.goal_defined = len(v1) == len(v2)
+                    self.angular_velocity = goal_dir - self.heading + np.pi
 
         self.update_motion(boundary, None)
 

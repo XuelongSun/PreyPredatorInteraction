@@ -56,7 +56,11 @@ if __name__ == "__main__":
     fig, axes = plt.subplots(3, 2, figsize=(10, 15))
     # fig.tight_layout()
     
-    x = range(32)
+   
+    f_avoid_range = (0.01, 1.01)
+    f_gather_range = (0.02, 0.32)
+    prey_number = 20
+    x = range(prey_number)
     # axes[0][0].bar(x, np.zeros(len(x)), edgecolor='skyblue',
     #             fill=False, ls='--', lw=1)
     e_bar = axes[0][0].bar(x, np.ones(len(x)),
@@ -79,7 +83,7 @@ if __name__ == "__main__":
     # f_avoid_mean_l, = axes[1][1].plot(0, 0, lw=2, color='tomato')
     # axes[1][1].set_title("Preys' mean F_avoid")
     # axes[1][1].set_xlabel("Time/step")
-    _, _, f_avoid_h = axes[1][1].hist(np.ones(len(x)), bins=20, range=(0, 0.7),
+    _, _, f_avoid_h = axes[1][1].hist(np.ones(len(x)), bins=20, range=f_avoid_range,
                                       facecolor='tomato')
     axes[1][1].set_ylabel('F_avoid')
     # axes[1][1].grid()
@@ -93,7 +97,7 @@ if __name__ == "__main__":
     # f_gather_mean_l, = axes[2][1].plot(0, 0, lw=2, color='cyan')
     # axes[2][1].set_title("Preys' mean F_gather")
     # axes[2][1].set_xlabel("Time/step")
-    _, _, f_gather_h = axes[2][1].hist(np.ones(len(x)), bins=20, range=(6, 14),
+    _, _, f_gather_h = axes[2][1].hist(np.ones(len(x)), bins=20, range=f_gather_range,
                                        facecolor='cyan')
     axes[2][1].set_ylabel('F_gather')
     # axes[2][1].grid()
@@ -102,11 +106,11 @@ if __name__ == "__main__":
         data = pickle.loads(data_receiver.data)
         if 'f_avoid' in data.keys():
             f_avoid = data['f_avoid']
-        axes[1][1].hist(f_avoid, bins=20, range=(0, 0.7),
+        axes[1][1].hist(f_avoid, bins=20, range=f_avoid_range,
                         edgecolor='gray', facecolor='none', alpha=0.5, ls='--', lw=2)
         if 'f_gather' in data.keys():
             f_avoid = data['f_gather']
-        axes[2][1].hist(f_avoid, bins=20, range=(6, 14),
+        axes[2][1].hist(f_avoid, bins=20, range=f_gather_range,
                         edgecolor='gray', facecolor='none', alpha=0.5, ls='--', lw=2)
             
     def update(frame):
@@ -121,7 +125,7 @@ if __name__ == "__main__":
                     rect.set_height(e)
                     e_t += e
             axes[0][0].set_ylim(0, np.array(energy).max()+2)
-            e_total.append(e_t)
+            e_total.append(e_t/prey_number)
             e_total_l.set_data(range(len(e_total)), e_total)
             axes[0][1].set_xlim([0, len(e_total)])
             axes[0][1].set_ylim([0, max(e_total)*1.2])
@@ -132,7 +136,7 @@ if __name__ == "__main__":
                 for rect, fa in zip(f_avoid_bar, f_avoid):
                     rect.set_height(fa)
                     fa_t += fa
-                t_d,_ = np.histogram(f_avoid, bins=len(f_avoid_h), range=(0, 0.7))
+                t_d,_ = np.histogram(f_avoid, bins=len(f_avoid_h), range=f_avoid_range)
                 for rect, d in zip(f_avoid_h, t_d):
                     rect.set_height(d)
             
@@ -151,7 +155,7 @@ if __name__ == "__main__":
                 for rect, fg in zip(f_gather_bar, f_gather):
                     rect.set_height(fg)
                     fg_t += fg
-                t_d, _ = np.histogram(f_gather, bins=len(f_gather_h), range=(6, 14))
+                t_d, _ = np.histogram(f_gather, bins=len(f_gather_h), range=f_gather_range)
                 for rect, d in zip(f_gather_h, t_d):
                     rect.set_height(d)
             axes[2][0].set_ylim(0, np.array(f_gather).max()+2)

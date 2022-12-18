@@ -49,7 +49,7 @@ class Environment:
 class Simulator(Thread):
     def __init__(self, time_out, 
                  location, width, height, 
-                 obstacles=None):
+                 obstacles=None, prey_nums=30):
         
         Thread.__init__(self)
         
@@ -64,7 +64,7 @@ class Simulator(Thread):
 
         
         self.preys = []
-        for i in range(30):
+        for i in range(prey_nums):
             h = np.random.vonmises(0, 100, 1)[0]
             f = False
             while not f:
@@ -151,7 +151,7 @@ class Simulator(Thread):
     
     def arange_cluster_rectangle(self):
         rect = {}
-        margin = 12
+        margin = 10
         for ind, ags in self.cluster.items():
             if len(ags) >=2:
                 x = np.array([a.position[0] for a in ags])
@@ -240,8 +240,7 @@ class Simulator(Thread):
                                                  thickness=2)
         cv2.imshow('Simulation', cv2.cvtColor(self.visualize_img, cv2.COLOR_RGB2BGR))
     
-    def save_experiment_data(self):
-        filename = RESULT_FOLDER + EXP_NAME + '.mat'
+    def save_experiment_data(self, filename):
         try:
             file = sio.loadmat(filename)
             save_dict = {'data': np.vstack([file['data'], self.data_to_save])}
@@ -251,10 +250,9 @@ class Simulator(Thread):
         sio.savemat(filename, save_dict)
         self.data_to_save = []
         
-    def run(self):
+    def run(self, save_data=False, filename='', visualization=False):
         self.time = 0
         end_condition = True if self.time_out is None else (self.time <= self.time_out*1000)
-        
         # visualization parameter
         show_agents = (0, 1)
         # alive_agents = filter(lambda p:p.state != 'death', self.preys)
@@ -274,14 +272,14 @@ class Simulator(Thread):
                         a_.cluster_id = pe.cluster_id
                 self.arange_cluster_rectangle()
                 # collision
-                if not pe.collision:
-                    c, c_theta = self.get_collide_agents(pe)
-                    if c:
-                        pe.collision = True
-                        pe.collision_theta = c_theta[0]
-                        for c_, theta_ in zip(c, c_theta):
-                            c_.collision = True
-                            c_.collision_theta = theta_
+                # if not pe.collision:
+                #     c, c_theta = self.get_collide_agents(pe)
+                #     if c:
+                #         pe.collision = True
+                #         pe.collision_theta = c_theta[0]
+                #         for c_, theta_ in zip(c, c_theta):
+                #             c_.collision = True
+                #             c_.collision_theta = theta_
                 pe.update(self.dt, self.environment.pheromone.field, self.environment.boundary)
                 # print(pe.position, self.environment.boundary)
                 p = world2image_coordinates_transfer(pe.position,
@@ -301,7 +299,7 @@ class Simulator(Thread):
                     # t_prey.f_avoid = np.mean([a.f_avoid for a in self.alive_preys])
 
                     # 2.evolving parameters setted with possiblities (agent with max energy has highest possibility)
-                    ## get alive preys' energy
+                    # get alive preys' energy
                     temp_a_e = [(a, a.energy) for a in self.alive_preys]
                     temp_a_e = sorted(temp_a_e, key=lambda x:x[1])
                     sum_ = sum([a_[1] for a_ in temp_a_e])
@@ -312,6 +310,10 @@ class Simulator(Thread):
                     t_prey.f_gather = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_gather
                     t_prey.f_avoid = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_avoid
                     
+                    # 3. no evolving, random
+                    # t_prey.f_gather = np.random.uniform(0.02, 0.32)
+                    # t_prey.f_avoid = np.random.uniform(0.01,1.01)
+                    
                     # add to the lists
                     self.preys.append(t_prey)
                     self.alive_preys.append(t_prey)
@@ -321,8 +323,8 @@ class Simulator(Thread):
             # render pheromone
             predator_pos = []
             for pd in self.predators:
-                pd.update(self.dt, self.environment.pheromone.field, self.environment.boundary,
-                          self.cluster)
+                pd.update(self.environment.boundary,
+                          self.cluster, len(self.alive_preys))
                 p = world2image_coordinates_transfer(pd.position,
                                                     self.environment.boundary)
                 predator_pos.append(p)
@@ -330,46 +332,48 @@ class Simulator(Thread):
                                               self.pheromone_inject_k)
             
             # cv2-based 2D viualization
-            if self.time % 100 < self.dt:
-                self.visualization2d(show_agent=show_agents)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                cv2.destroyAllWindows()
-                break
-            
-            # debug data
- 
-            self.debug_data['energy'] = energy
-            self.debug_data['f_avoid'] = [a.f_avoid for a in self.alive_preys]
-            self.debug_data['f_gather'] = [a.f_gather for a in self.alive_preys]
-            
-            # save data
-            d = np.zeros([len(self.alive_preys), 7])
-            for i, a in enumerate(self.alive_preys):
-                d[i] = np.array(([a.id, a.energy, a.f_avoid, a.f_gather,
-                                  a.position[0], a.position[1], a.heading]))
-    
-            self.data_to_save.append(list(d))
+            if visualization:
+                if (self.time % 100 <= self.dt):
+                    self.visualization2d(show_agent=show_agents)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    cv2.destroyAllWindows()
+                    break
 
-            if self.time % 100 < self.dt:
-                self.save_experiment_data()
+                # debug data
+                self.debug_data['energy'] = energy
+                self.debug_data['f_avoid'] = [a.f_avoid for a in self.alive_preys]
+                self.debug_data['f_gather'] = [a.f_gather for a in self.alive_preys]
+            
+            if save_data:
+                # save data
+                d = np.zeros([len(self.alive_preys), 7])
+                for i, a in enumerate(self.alive_preys):
+                    d[i] = np.array(([a.id, a.energy, a.f_avoid, a.f_gather,
+                                    a.position[0], a.position[1], a.heading]))
+        
+                self.data_to_save.append(list(d))
+
+                if self.time % 100 <= self.dt:
+                    self.save_experiment_data(filename=filename)
             
             self.time += self.dt
+            end_condition = True if self.time_out is None else (self.time <= self.time_out*1000)
 
 
 if __name__ == "__main__":
-    ARENA_WIDTH = 400
-    ARENA_HEIGHT = 400
+    ARENA_WIDTH = 300
+    ARENA_HEIGHT = 300
     ARENA_LOCATION = [0, 0]
-    TIMEOUT = 10
+    TIMEOUT = None
     
     sim = Simulator(TIMEOUT, ARENA_LOCATION,
-                    ARENA_WIDTH, ARENA_HEIGHT)
+                    ARENA_WIDTH, ARENA_HEIGHT, prey_nums=20)
     
     
     data_server = DataServer(sim.debug_data)
     data_server_process = Thread(target=data_server.run)
     data_server_process.start()
-    sim.run()
+    sim.run(visualization=True)
     data_server.stop = True
     data_server_process.join()
     # viewer3d = pr.Viewer(scene3d, run_in_thread=True)
