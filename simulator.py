@@ -288,32 +288,35 @@ class Simulator(Thread):
                 # update energy
                 energy.append(pe.energy)
                 if pe.state == 'death':
+                    if self.predators[-1].state == 'hunting':
+                        self.predators[-1].energy += 0.4
                     self.dead_preys.append(pe)
                     self.alive_preys.remove(pe)
                     # spawn a new prey
                     h = np.random.vonmises(0, 100, 1)[0]
-                    pos = [100, 100]
+                    pos = [np.random.uniform(30, self.environment.boundary[1] - self.environment.boundary[0] -30),
+                           np.random.uniform(30, self.environment.boundary[3] - self.environment.boundary[2] -30)]
                     t_prey = Prey(len(self.preys) + 1, h, pos)
                     # 1.evolving parameters setted as the average value of the group
                     # t_prey.f_gather = np.mean([a.f_gather for a in self.alive_preys])
                     # t_prey.f_avoid = np.mean([a.f_avoid for a in self.alive_preys])
-
-                    # 2.evolving parameters setted with possiblities (agent with max energy has highest possibility)
-                    # get alive preys' energy
-                    temp_a_e = [(a, a.energy) for a in self.alive_preys]
-                    temp_a_e = sorted(temp_a_e, key=lambda x:x[1])
-                    sum_ = sum([a_[1] for a_ in temp_a_e])
-                    partial_p = [a_[1]/sum_ for a_ in temp_a_e]
-                    p_ = np.random.rand(1)[0]
-                    ind = np.where(partial_p < p_)[0][-1] if len(np.where(partial_p < p_)[0]) > 0 else -1
-                    # print(ind, len(temp_a_e), temp_a_e)
-                    t_prey.f_gather = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_gather
-                    t_prey.f_avoid = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_avoid
-                    
-                    # 3. no evolving, random
-                    # t_prey.f_gather = np.random.uniform(0.02, 0.32)
-                    # t_prey.f_avoid = np.random.uniform(0.01,1.01)
-                    
+                    if np.random.uniform(0, 1) > 0.1:
+                        # 2.evolving parameters setted with possiblities (agent with max energy has highest possibility)
+                        # get alive preys' energy
+                        temp_a_e = [(a, a.energy) for a in self.alive_preys]
+                        temp_a_e = sorted(temp_a_e, key=lambda x:x[1])
+                        sum_ = sum([a_[1] for a_ in temp_a_e])
+                        partial_p = [a_[1]/sum_ for a_ in temp_a_e]
+                        p_ = np.random.rand(1)[0]
+                        ind = np.where(partial_p < p_)[0][-1] if len(np.where(partial_p < p_)[0]) > 0 else -1
+                        # print(ind, len(temp_a_e), temp_a_e)
+                        t_prey.f_gather = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_gather
+                        t_prey.f_avoid = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_avoid
+                    else:
+                        # 3. no evolving, random
+                        t_prey.f_gather = np.random.uniform(0.02, 0.32)
+                        t_prey.f_avoid = np.random.uniform(0.01, 1.01)
+                    t_prey.energy = np.mean(np.array([a.energy for a in self.alive_preys]))
                     # add to the lists
                     self.preys.append(t_prey)
                     self.alive_preys.append(t_prey)
@@ -343,6 +346,7 @@ class Simulator(Thread):
                 self.debug_data['energy'] = energy
                 self.debug_data['f_avoid'] = [a.f_avoid for a in self.alive_preys]
                 self.debug_data['f_gather'] = [a.f_gather for a in self.alive_preys]
+                self.debug_data['pd_energy'] = self.predators[-1].energy
             
             if save_data:
                 # save data

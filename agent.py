@@ -215,7 +215,7 @@ class Prey(Agent):
 
         # motion control depend on state
         if self.state == 'avoiding':
-            f = np.max([self.energy * 0.1, 4])
+            f = np.max([self.energy * 0.2, 4])
             self.energy -= f * dt / 1000
             self.linear_velocity = np.min([f, 2.4])
             
@@ -228,7 +228,7 @@ class Prey(Agent):
             # self.angular_velocity = (o_value_l - o_value_r)*10 % (np.pi*3/4)
                 
         elif self.state == 'gathering':
-            self.energy -= 1 * dt / 1000
+            self.energy -= 0.2 * dt / 1000
             self.linear_velocity = 1.2
             # depend on the visual input
             x = np.mean(np.where(img_f > 1)[1])
@@ -238,7 +238,7 @@ class Prey(Agent):
             self.linear_velocity = 0 
             self.angular_velocity = 0
         elif self.state == 'wandering':
-            self.energy -= 1 * dt / 1000
+            self.energy -= 0.2 * dt / 1000
             self.linear_velocity = 1
             self.angular_velocity = np.random.vonmises(0.0, 100.0, 1)[0]
 
@@ -252,31 +252,39 @@ class Predator(Agent):
         self.phero_radius = 40
         self.linear_velocity = 4
         self.goal_defined = False
+        self.energy = 16
+        self.state = 'hunting'
         
     def update(self, boundary, cluster, num_prey):
-        self.angular_velocity = np.random.vonmises(0.0, 100.0, 1)[0]
-        # found cluster with highest density
-        sorted_c = sorted(cluster.items(), key=lambda v:len(v[1]))
-        _, v1 = sorted_c[-1]
-        v2 = [] if len(sorted_c) <=1 else sorted_c[-2][1]
-        # if cluster size >= 5
-        if len(v1) >= 5:
-            if len(v1) >= num_prey - 2:
-                i = np.random.randint(0, len(v1))
-                px = v1[i].position[0]
-                py = v1[i].position[1]
-                goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
-            else:
-                if len(v1) == len(v2) and self.goal_defined:
-                    self.angular_velocity = 0
-                else:
-                    px = np.array([a.position[0] for a in v1]).mean()
-                    py = np.array([a.position[1] for a in v1]).mean()
+        self.energy -= self.energy*0.0001
+        if 18 <= self.energy:
+            self.state = 'stopping'
+            # no motion
+            return
+        else:
+            self.state = 'hunting'
+            # found cluster with highest density
+            sorted_c = sorted(cluster.items(), key=lambda v:len(v[1]))
+            _, v1 = sorted_c[-1]
+            v2 = [] if len(sorted_c) <=1 else sorted_c[-2][1]
+            # if cluster size >= 5
+            if len(v1) >= 5:
+                if len(v1) >= num_prey - 2:
+                    i = np.random.randint(0, len(v1))
+                    px = v1[i].position[0]
+                    py = v1[i].position[1]
                     goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
-                    self.goal_defined = len(v1) == len(v2)
-                    self.angular_velocity = goal_dir - self.heading + np.pi
+                else:
+                    if len(v1) == len(v2) and self.goal_defined:
+                        self.angular_velocity = 0
+                    else:
+                        px = np.array([a.position[0] for a in v1]).mean()
+                        py = np.array([a.position[1] for a in v1]).mean()
+                        goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
+                        self.goal_defined = len(v1) == len(v2)
+                        self.angular_velocity = goal_dir - self.heading + np.pi
 
-        self.update_motion(boundary, None)
+            self.update_motion(boundary, None)
 
 
 

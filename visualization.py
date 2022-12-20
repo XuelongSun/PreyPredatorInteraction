@@ -69,11 +69,19 @@ if __name__ == "__main__":
     axes[0][0].set_ylabel('Energy')
     e_total = []
     e_total_l, = axes[0][1].plot(0, 0, lw=2, color='skyblue')
-    axes[0][1].set_title("Preys' total energy")
-    # axes[0][1].set_xlabel("Time/step")
-    axes[0][1].set_ylabel('Energy')
+    # axes[0][1].set_title("Preys' total energy")
+    axes[0][1].set_xlabel("Time/step")
+    axes[0][1].tick_params(axis='y', colors='skyblue')
+    axes[0][1].set_ylabel("Prey's averaged Energy")
     axes[0][1].grid()
 
+    # predator energy
+    ax_pd_e = axes[0][1].twinx()
+    pd_e, = ax_pd_e.plot(0, 0, lw=2, color='tomato')
+    ax_pd_e.tick_params(axis='y', colors='tomato')
+    ax_pd_e.set_ylabel("predator's energy")
+    pd_e_data = []
+    
     f_avoid_bar = axes[1][0].bar(x, np.ones(len(x)),
                                  color='tomato', alpha=0.5)
     # axes[1][0].set_xlabel('Prey ID')
@@ -129,6 +137,12 @@ if __name__ == "__main__":
             e_total_l.set_data(range(len(e_total)), e_total)
             axes[0][1].set_xlim([0, len(e_total)])
             axes[0][1].set_ylim([0, max(e_total)*1.2])
+            
+            if 'pd_energy' in data.keys():
+                pd_e_data.append(data['pd_energy'])
+            pd_e.set_data(range(len(pd_e_data)), pd_e_data)
+            ax_pd_e.set_xlim([0, len(pd_e_data)])
+            ax_pd_e.set_ylim([0, max(pd_e_data)*1.2])
             # f_avoid
             fa_t = 0
             if 'f_avoid' in data.keys():
