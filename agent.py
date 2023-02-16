@@ -57,6 +57,8 @@ class Agent:
         self.body_color_hsv = color_rgb2hsv(color)
         
         self.time = 0
+        
+        self.last_cluster_prey_num = 0
 
     def update_motion(self, boundary, obstacles):
         # if still in collision
@@ -133,7 +135,8 @@ class Prey(Agent):
         super().__init__(uuid, init_heading, init_position)
         
         self.odor_sensors = [OdorSensor(), OdorSensor()]
-        self.energy = 20
+        # self.energy = 20
+        self.energy = 2
         self.state = "wandering"
         
         # evolving parameters
@@ -141,7 +144,7 @@ class Prey(Agent):
         # self.f_avoid = np.random.rand(1)[0] * 0.5 + 0.1
         
         self.f_gather = np.random.uniform(0.02, 0.32)
-        self.f_avoid = np.random.uniform(0.01,1.01)
+        self.f_avoid = np.random.uniform(0.01,10.01)
         
         self.odor_sensors_positions = np.array([[0, self.size/2], [0, -self.size/2]])
         self.view = np.zeros([IMAGE_HEIGHT, IMAGE_WIDTH, 3], np.uint8)
@@ -174,6 +177,8 @@ class Prey(Agent):
             # remove from the 3d scene
             scene3d.remove_node(self.node3d)
             return
+        elif(self.energy>=30):
+            self.energy=30
         
         if self.state == 'death':
             return
@@ -200,9 +205,11 @@ class Prey(Agent):
             hsv = cv2.cvtColor(self.view, cv2.COLOR_RGB2HSV)
             img_f = cv2.inRange(hsv, self.hsv_l, self.hsv_h)
             size = img_f.sum()/7650000
+            # tim2 = self.view.shape
+            # print('img_f.sum = ', tim2)
             # print('size:', size)
             if size >= self.max_pixel_num:
-                self.state = 'wandering'
+                self.state = 'stop'
             elif size >= self.thr_stop_pixel_num:
                 self.state = 'stop'
             elif size >= self.f_gather:
@@ -215,9 +222,11 @@ class Prey(Agent):
 
         # motion control depend on state
         if self.state == 'avoiding':
-            f = np.max([self.energy * 0.2, 4])
+            # f = np.max([self.energy * 0.2, 4])
+            f = np.max([0.2, np.min([self.energy * 0.2, 4])])
             self.energy -= f * dt / 1000
-            self.linear_velocity = np.min([f, 2.4])
+            # self.linear_velocity = np.min([f, 2.4])
+            self.linear_velocity = f
             
             odor_old = self.odor_sensor_l_values[-2] + self.odor_sensor_r_values[-2]
             odor_now = self.odor_sensor_l_values[-1] + self.odor_sensor_r_values[-1]
@@ -267,6 +276,7 @@ class Predator(Agent):
             sorted_c = sorted(cluster.items(), key=lambda v:len(v[1]))
             _, v1 = sorted_c[-1]
             v2 = [] if len(sorted_c) <=1 else sorted_c[-2][1]
+
             # if cluster size >= 5
             if len(v1) >= 5:
                 if len(v1) >= num_prey - 2:
@@ -275,15 +285,22 @@ class Predator(Agent):
                     py = v1[i].position[1]
                     goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
                 else:
-                    if len(v1) == len(v2) and self.goal_defined:
-                        self.angular_velocity = 0
-                    else:
+                    if len(v1) >= self.last_cluster_prey_num+2:
                         px = np.array([a.position[0] for a in v1]).mean()
                         py = np.array([a.position[1] for a in v1]).mean()
                         goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
-                        self.goal_defined = len(v1) == len(v2)
                         self.angular_velocity = goal_dir - self.heading + np.pi
-
+                    else:
+                        self.angular_velocity = 0
+                    # if len(v1) == len(v2) and self.goal_defined:
+                    #     self.angular_velocity = 0
+                    # else:
+                    #     px = np.array([a.position[0] for a in v1]).mean()
+                    #     py = np.array([a.position[1] for a in v1]).mean()
+                    #     goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
+                    #     self.goal_defined = (len(v1) == len(v2))
+                    #     self.angular_velocity = goal_dir - self.heading + np.pi
+            self.last_cluster_prey_num = len(v1)
             self.update_motion(boundary, None)
 
 

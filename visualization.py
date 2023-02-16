@@ -57,7 +57,7 @@ if __name__ == "__main__":
     # fig.tight_layout()
     
    
-    f_avoid_range = (0.01, 1.01)
+    f_avoid_range = (0.01, 10.01)
     f_gather_range = (0.02, 0.32)
     prey_number = 20
     x = range(prey_number)

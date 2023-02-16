@@ -4,6 +4,8 @@ import cv2
 class Pheromone:
     def __init__(self, width, height, dt):
         self.dt = dt
+        self.width = width
+        self.height = height
         self.field = np.zeros([height, width, 3])
         # pheromone parameters
         self.evaporation = 1e3
@@ -22,8 +24,18 @@ class Pheromone:
         for i in range(2):
             # injection
             for pos, k in zip(inject_pos, inject_k):
-                self.field[pos[0]-inject_size:pos[0]+inject_size,
-                           pos[1]-inject_size:pos[1]+inject_size, i] += k[i]
+                
+                start_x = pos[0]-inject_size
+                start_y = pos[1]-inject_size
+                end_x = pos[0]+inject_size
+                end_y = pos[1]+inject_size
+                
+                start_x = max(min(self.width-1, start_x), 0)
+                start_y = max(min(self.height-1, start_y), 0)
+                end_x = max(min(self.width-1, end_x), 0)
+                end_y = max(min(self.height-1, end_y), 0)
+                
+                self.field[start_x:end_x, start_y:end_y,i]+= k[i]
             
         # evaporation
         self.field += self.field * (-1/self.evaporation) * self.dt
