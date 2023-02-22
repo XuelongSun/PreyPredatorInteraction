@@ -256,10 +256,10 @@ class Prey(Agent):
         self.time += dt
 
 class Predator(Agent):
-    def __init__(self, uuid, init_heading, init_position):
+    def __init__(self, uuid, init_heading, init_position, speed=4):
         super().__init__(uuid, init_heading, init_position, color=(200, 0, 20))
         self.phero_radius = 40
-        self.linear_velocity = 4
+        self.linear_velocity = speed
         self.goal_defined = False
         self.energy = 16
         self.state = 'hunting'

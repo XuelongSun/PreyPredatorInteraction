@@ -1,12 +1,11 @@
 from threading import Thread
 from itertools import combinations
 import scipy.io as sio
-import time
+
 from matplotlib.pyplot import show
 
 import numpy as np
 import cv2
-import pyrender as pr
 
 from agent import Prey, Predator, scene3d
 from pheromone import Pheromone
@@ -49,7 +48,9 @@ class Environment:
 class Simulator(Thread):
     def __init__(self, time_out, 
                  location, width, height, 
-                 obstacles=None, prey_nums=30):
+                 obstacles=None, prey_nums=30, 
+                 phero_width=20, predator_speed=4,
+                 ):
         
         Thread.__init__(self)
         
@@ -87,8 +88,9 @@ class Simulator(Thread):
             h = np.random.vonmises(0, 100, 1)[0]
             pos = [width/2, height/2] 
             self.pheromone_inject_k.append([100, 0].copy())
-            self.predators.append(Predator(i, h, pos))
+            self.predators.append(Predator(i, h, pos, predator_speed))
         self.pheromone_inject_k = np.array(self.pheromone_inject_k, np.float32)
+        self.pheromone_width = phero_width
         
         # visualization
         self.visualize_img = np.zeros((height, width, 3), np.uint8)
@@ -103,6 +105,7 @@ class Simulator(Thread):
         
         # save data
         self.data_to_save = []
+        
     
     def get_collide_agents(self, agent:Prey):
         a_ = []
@@ -238,7 +241,6 @@ class Simulator(Thread):
                                                  a_end[::-1],
                                                  (16, 240, 229),
                                                  thickness=2)
-        cv2.imshow('Simulation', cv2.cvtColor(self.visualize_img, cv2.COLOR_RGB2BGR))
     
     def save_experiment_data(self, filename):
         try:
@@ -253,115 +255,116 @@ class Simulator(Thread):
     def run(self, save_data=False, filename='', visualization=False):
         self.time = 0
         end_condition = True if self.time_out is None else (self.time <= self.time_out*1000)
+        # alive_agents = filter(lambda p:p.state != 'death', self.preys)
         # visualization parameter
         show_agents = (0, 1)
-        # alive_agents = filter(lambda p:p.state != 'death', self.preys)
         while end_condition:
-            # update prey's state
-            prey_pos = []
-            energy = []
-            self.clear_cluster_collision_info()
-            for pe in self.alive_preys:
-                # cluster
-                if pe.cluster_id is None:
-                    # belong to a new cluster
-                    a = self.get_near_agents(pe)
-                    pe.cluster_id = len(self.cluster.keys()) + 1
-                    self.cluster.update({pe.cluster_id:a + [pe]})
-                    for a_ in a:
-                        a_.cluster_id = pe.cluster_id
-                self.arange_cluster_rectangle()
-                # collision
-                # if not pe.collision:
-                #     c, c_theta = self.get_collide_agents(pe)
-                #     if c:
-                #         pe.collision = True
-                #         pe.collision_theta = c_theta[0]
-                #         for c_, theta_ in zip(c, c_theta):
-                #             c_.collision = True
-                #             c_.collision_theta = theta_
-                pe.update(self.dt, self.environment.pheromone.field, self.environment.boundary)
-                # print(pe.position, self.environment.boundary)
-                p = world2image_coordinates_transfer(pe.position,
-                                                     self.environment.boundary)
-                prey_pos.append(p)
-                # update energy
-                energy.append(pe.energy)
-                if pe.state == 'death':
-                    if self.predators[-1].state == 'hunting':
-                        self.predators[-1].energy += 0.4
-                    self.dead_preys.append(pe)
-                    self.alive_preys.remove(pe)
-                    # spawn a new prey
-                    h = np.random.vonmises(0, 100, 1)[0]
-                    pos = [np.random.uniform(30, self.environment.boundary[1] - self.environment.boundary[0] -30),
-                           np.random.uniform(30, self.environment.boundary[3] - self.environment.boundary[2] -30)]
-                    t_prey = Prey(len(self.preys) + 1, h, pos)
-                    # 1.evolving parameters setted as the average value of the group
-                    # t_prey.f_gather = np.mean([a.f_gather for a in self.alive_preys])
-                    # t_prey.f_avoid = np.mean([a.f_avoid for a in self.alive_preys])
-                    if np.random.uniform(0, 1) > 0.1:
-                        # 2.evolving parameters setted with possiblities (agent with max energy has highest possibility)
-                        # get alive preys' energy
-                        temp_a_e = [(a, a.energy) for a in self.alive_preys]
-                        temp_a_e = sorted(temp_a_e, key=lambda x:x[1])
-                        sum_ = sum([a_[1] for a_ in temp_a_e])
-                        partial_p = [a_[1]/sum_ for a_ in temp_a_e]
-                        p_ = np.random.rand(1)[0]
-                        ind = np.where(partial_p < p_)[0][-1] if len(np.where(partial_p < p_)[0]) > 0 else -1
-                        # print(ind, len(temp_a_e), temp_a_e)
-                        t_prey.f_gather = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_gather
-                        t_prey.f_avoid = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_avoid
-                    else:
-                        # 3. no evolving, random
-                        t_prey.f_gather = np.random.uniform(0.02, 0.32)
-                        t_prey.f_avoid = np.random.uniform(0.01, 1.01)
-                    t_prey.energy = np.mean(np.array([a.energy for a in self.alive_preys]))
-                    # add to the lists
-                    self.preys.append(t_prey)
-                    self.alive_preys.append(t_prey)
-                    
-                    # print(len(self.alive_preys), len(self.dead_preys), len(self.preys))
-
-            # render pheromone
-            predator_pos = []
-            for pd in self.predators:
-                pd.update(self.environment.boundary,
-                          self.cluster, len(self.alive_preys))
-                p = world2image_coordinates_transfer(pd.position,
-                                                    self.environment.boundary)
-                predator_pos.append(p)
-            self.environment.pheromone.update(predator_pos, 20,
-                                              self.pheromone_inject_k)
-            
-            # cv2-based 2D viualization
+            self.step(save_data, filename)
+                    # cv2-based 2D viualization
             if visualization:
                 if (self.time % 100 <= self.dt):
                     self.visualization2d(show_agent=show_agents)
+                    cv2.imshow('Simulation', cv2.cvtColor(self.visualize_img, cv2.COLOR_RGB2BGR))
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     cv2.destroyAllWindows()
                     break
-
-                # debug data
-                self.debug_data['energy'] = energy
-                self.debug_data['f_avoid'] = [a.f_avoid for a in self.alive_preys]
-                self.debug_data['f_gather'] = [a.f_gather for a in self.alive_preys]
-                self.debug_data['pd_energy'] = self.predators[-1].energy
-            
-            if save_data:
-                # save data
-                d = np.zeros([len(self.alive_preys), 7])
-                for i, a in enumerate(self.alive_preys):
-                    d[i] = np.array(([a.id, a.energy, a.f_avoid, a.f_gather,
-                                    a.position[0], a.position[1], a.heading]))
-        
-                self.data_to_save.append(list(d))
-
-                if self.time % 100 <= self.dt:
-                    self.save_experiment_data(filename=filename)
-            
-            self.time += self.dt
             end_condition = True if self.time_out is None else (self.time <= self.time_out*1000)
+        
+    def step(self, save_data=False, filename=''):
+        # update prey's state
+        prey_pos = []
+        energy = []
+        self.clear_cluster_collision_info()
+        for pe in self.alive_preys:
+            # cluster
+            if pe.cluster_id is None:
+                # belong to a new cluster
+                a = self.get_near_agents(pe)
+                pe.cluster_id = len(self.cluster.keys()) + 1
+                self.cluster.update({pe.cluster_id:a + [pe]})
+                for a_ in a:
+                    a_.cluster_id = pe.cluster_id
+            self.arange_cluster_rectangle()
+            # collision
+            # if not pe.collision:
+            #     c, c_theta = self.get_collide_agents(pe)
+            #     if c:
+            #         pe.collision = True
+            #         pe.collision_theta = c_theta[0]
+            #         for c_, theta_ in zip(c, c_theta):
+            #             c_.collision = True
+            #             c_.collision_theta = theta_
+            pe.update(self.dt, self.environment.pheromone.field, self.environment.boundary)
+            p = world2image_coordinates_transfer(pe.position,
+                                                 self.environment.boundary)
+            prey_pos.append(p)
+            # update energy
+            energy.append(pe.energy)
+            if pe.state == 'death':
+                if self.predators[-1].state == 'hunting':
+                    self.predators[-1].energy += 0.4
+                self.dead_preys.append(pe)
+                self.alive_preys.remove(pe)
+                # spawn a new prey
+                h = np.random.vonmises(0, 100, 1)[0]
+                pos = [np.random.uniform(30, self.environment.boundary[1] - self.environment.boundary[0] -30),
+                        np.random.uniform(30, self.environment.boundary[3] - self.environment.boundary[2] -30)]
+                t_prey = Prey(len(self.preys) + 1, h, pos)
+                # 1.evolving parameters setted as the average value of the group
+                # t_prey.f_gather = np.mean([a.f_gather for a in self.alive_preys])
+                # t_prey.f_avoid = np.mean([a.f_avoid for a in self.alive_preys])
+                if np.random.uniform(0, 1) > 0.1:
+                    # 2.evolving parameters setted with possiblities (agent with max energy has highest possibility)
+                    # get alive preys' energy
+                    temp_a_e = [(a, a.energy) for a in self.alive_preys]
+                    temp_a_e = sorted(temp_a_e, key=lambda x:x[1])
+                    sum_ = sum([a_[1] for a_ in temp_a_e])
+                    partial_p = [a_[1]/sum_ for a_ in temp_a_e]
+                    p_ = np.random.rand(1)[0]
+                    ind = np.where(partial_p < p_)[0][-1] if len(np.where(partial_p < p_)[0]) > 0 else -1
+                    # print(ind, len(temp_a_e), temp_a_e)
+                    t_prey.f_gather = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_gather
+                    t_prey.f_avoid = temp_a_e[min(ind + 1, len(temp_a_e)-1)][0].f_avoid
+                else:
+                    # 3. no evolving, random
+                    t_prey.f_gather = np.random.uniform(0.02, 0.32)
+                    t_prey.f_avoid = np.random.uniform(0.01, 1.01)
+                t_prey.energy = np.mean(np.array([a.energy for a in self.alive_preys]))
+                # add to the lists
+                self.preys.append(t_prey)
+                self.alive_preys.append(t_prey)
+
+        # render pheromone
+        predator_pos = []
+        for pd in self.predators:
+            pd.update(self.environment.boundary,
+                        self.cluster, len(self.alive_preys))
+            p = world2image_coordinates_transfer(pd.position,
+                                                self.environment.boundary)
+            predator_pos.append(p)
+        self.environment.pheromone.update(predator_pos,
+                                          self.pheromone_width,
+                                          self.pheromone_inject_k)
+
+        # debug data
+        self.debug_data['energy'] = energy
+        self.debug_data['f_avoid'] = [a.f_avoid for a in self.alive_preys]
+        self.debug_data['f_gather'] = [a.f_gather for a in self.alive_preys]
+        self.debug_data['pd_energy'] = self.predators[-1].energy
+        
+        if save_data:
+            # save data
+            d = np.zeros([len(self.alive_preys), 7])
+            for i, a in enumerate(self.alive_preys):
+                d[i] = np.array(([a.id, a.energy, a.f_avoid, a.f_gather,
+                                a.position[0], a.position[1], a.heading]))
+    
+            self.data_to_save.append(list(d))
+
+            if self.time % 100 <= self.dt:
+                self.save_experiment_data(filename=filename)
+        
+        self.time += self.dt
 
 
 if __name__ == "__main__":

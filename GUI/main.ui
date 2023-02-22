@@ -1,0 +1,912 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>mainWindow</class>
+ <widget class="QWidget" name="mainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>820</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <pointsize>10</pointsize>
+    <weight>75</weight>
+    <bold>true</bold>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Prey-Predator-Simulation</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: rgb(0, 0, 0);
+color: rgb(85, 170, 255);</string>
+  </property>
+  <widget class="QLabel" name="label_arena">
+   <property name="geometry">
+    <rect>
+     <x>206</x>
+     <y>234</y>
+     <width>500</width>
+     <height>500</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border-color: rgb(85, 170, 255);
+border-width: 2px;
+border-style:solid;</string>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="lineWidth">
+    <number>2</number>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QWidget" name="wp_1" native="true">
+   <property name="geometry">
+    <rect>
+     <x>736</x>
+     <y>26</y>
+     <width>450</width>
+     <height>171</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+  </widget>
+  <widget class="QTextEdit" name="te_logger">
+   <property name="geometry">
+    <rect>
+     <x>14</x>
+     <y>750</y>
+     <width>1173</width>
+     <height>64</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border-color: rgb(85, 170, 255);
+border-width: 1px;
+border-style:solid;</string>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pb_start">
+   <property name="geometry">
+    <rect>
+     <x>18</x>
+     <y>284</y>
+     <width>159</width>
+     <height>65</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>OpenHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border-color: rgb(85, 170, 255);
+border-width: 2px;
+border-style:solid;
+border-radius:10px;</string>
+   </property>
+   <property name="text">
+    <string>Start</string>
+   </property>
+  </widget>
+  <widget class="QWidget" name="wp_2" native="true">
+   <property name="geometry">
+    <rect>
+     <x>736</x>
+     <y>208</y>
+     <width>450</width>
+     <height>171</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+  </widget>
+  <widget class="QWidget" name="wp_3" native="true">
+   <property name="geometry">
+    <rect>
+     <x>736</x>
+     <y>386</y>
+     <width>450</width>
+     <height>175</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pb_save_data">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>684</y>
+     <width>159</width>
+     <height>49</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>OpenHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border-color: rgb(85, 170, 255);
+border-width: 2px;
+border-style:solid;
+border-radius:10px;</string>
+   </property>
+   <property name="text">
+    <string>Save Data</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="cb_p_1">
+   <property name="geometry">
+    <rect>
+     <x>732</x>
+     <y>10</y>
+     <width>453</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 170, 0);</string>
+   </property>
+   <item>
+    <property name="text">
+     <string>Prey-AverageEnergy</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Predator-Energy</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Prey-DeathRatio</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QComboBox" name="cb_p_2">
+   <property name="geometry">
+    <rect>
+     <x>732</x>
+     <y>190</y>
+     <width>455</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 170, 0);</string>
+   </property>
+   <item>
+    <property name="text">
+     <string>Prey-FGatherDistribution</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Prey-FAvoidDistribution</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Prey-EnergyDistribution</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string/>
+    </property>
+   </item>
+  </widget>
+  <widget class="QComboBox" name="cb_p_3">
+   <property name="geometry">
+    <rect>
+     <x>732</x>
+     <y>370</y>
+     <width>457</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 170, 0);</string>
+   </property>
+   <property name="currentIndex">
+    <number>1</number>
+   </property>
+   <item>
+    <property name="text">
+     <string>Prey-FGatherDistribution</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Prey-FAvoidDistribution</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Prey-EnergyDistribution</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string/>
+    </property>
+   </item>
+  </widget>
+  <widget class="Line" name="line">
+   <property name="geometry">
+    <rect>
+     <x>348</x>
+     <y>44</y>
+     <width>16</width>
+     <height>157</height>
+    </rect>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Plain</enum>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Vertical</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>148</x>
+     <y>8</y>
+     <width>54</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Prey</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>502</x>
+     <y>8</y>
+     <width>115</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Predator</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_5">
+   <property name="geometry">
+    <rect>
+     <x>18</x>
+     <y>214</y>
+     <width>71</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Arena Width:</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="s_arena_width">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>240</y>
+     <width>163</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <number>100</number>
+   </property>
+   <property name="maximum">
+    <number>1000</number>
+   </property>
+   <property name="singleStep">
+    <number>50</number>
+   </property>
+   <property name="pageStep">
+    <number>50</number>
+   </property>
+   <property name="value">
+    <number>200</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="tickPosition">
+    <enum>QSlider::TicksAbove</enum>
+   </property>
+   <property name="tickInterval">
+    <number>50</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lb_arena_width">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>218</y>
+     <width>54</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Adobe Devanagari</family>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 170, 0);</string>
+   </property>
+   <property name="text">
+    <string>200</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pb_load_cfg">
+   <property name="geometry">
+    <rect>
+     <x>18</x>
+     <y>500</y>
+     <width>159</width>
+     <height>47</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>OpenHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border-color: rgb(85, 170, 255);
+border-width: 2px;
+border-style:solid;
+border-radius:10px;</string>
+   </property>
+   <property name="text">
+    <string>Load Config</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pb_reset">
+   <property name="geometry">
+    <rect>
+     <x>18</x>
+     <y>442</y>
+     <width>159</width>
+     <height>47</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>OpenHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border-color: rgb(85, 170, 255);
+border-width: 2px;
+border-style:solid;
+border-radius:10px;</string>
+   </property>
+   <property name="text">
+    <string>Reset</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pb_save_cfg">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>624</y>
+     <width>159</width>
+     <height>47</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>OpenHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">border-color: rgb(85, 170, 255);
+border-width: 2px;
+border-style:solid;
+border-radius:10px;</string>
+   </property>
+   <property name="text">
+    <string>Save Config</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_6">
+   <property name="geometry">
+    <rect>
+     <x>372</x>
+     <y>44</y>
+     <width>37</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Speed</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="s_predator_speed">
+   <property name="geometry">
+    <rect>
+     <x>428</x>
+     <y>48</y>
+     <width>257</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>20</number>
+   </property>
+   <property name="singleStep">
+    <number>1</number>
+   </property>
+   <property name="pageStep">
+    <number>1</number>
+   </property>
+   <property name="value">
+    <number>4</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="tickPosition">
+    <enum>QSlider::TicksAbove</enum>
+   </property>
+   <property name="tickInterval">
+    <number>1</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lb_predator_speed">
+   <property name="geometry">
+    <rect>
+     <x>690</x>
+     <y>50</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Adobe Devanagari</family>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 170, 0);</string>
+   </property>
+   <property name="text">
+    <string>4</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_7">
+   <property name="geometry">
+    <rect>
+     <x>372</x>
+     <y>82</y>
+     <width>97</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Pheromone Width</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="s_phero_width">
+   <property name="geometry">
+    <rect>
+     <x>472</x>
+     <y>84</y>
+     <width>213</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <number>5</number>
+   </property>
+   <property name="maximum">
+    <number>100</number>
+   </property>
+   <property name="singleStep">
+    <number>5</number>
+   </property>
+   <property name="pageStep">
+    <number>5</number>
+   </property>
+   <property name="value">
+    <number>30</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="tickPosition">
+    <enum>QSlider::TicksAbove</enum>
+   </property>
+   <property name="tickInterval">
+    <number>5</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lb_phero_width">
+   <property name="geometry">
+    <rect>
+     <x>690</x>
+     <y>86</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Adobe Devanagari</family>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 170, 0);</string>
+   </property>
+   <property name="text">
+    <string>30</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_9">
+   <property name="geometry">
+    <rect>
+     <x>24</x>
+     <y>82</y>
+     <width>37</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Speed</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="s_prey_speed">
+   <property name="geometry">
+    <rect>
+     <x>70</x>
+     <y>86</y>
+     <width>237</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>10</number>
+   </property>
+   <property name="singleStep">
+    <number>1</number>
+   </property>
+   <property name="pageStep">
+    <number>1</number>
+   </property>
+   <property name="value">
+    <number>2</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="tickPosition">
+    <enum>QSlider::TicksAbove</enum>
+   </property>
+   <property name="tickInterval">
+    <number>1</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lb_prey_speed">
+   <property name="geometry">
+    <rect>
+     <x>316</x>
+     <y>86</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Adobe Devanagari</family>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 170, 0);</string>
+   </property>
+   <property name="text">
+    <string>2</string>
+   </property>
+  </widget>
+  <widget class="QWidget" name="wp_4" native="true">
+   <property name="geometry">
+    <rect>
+     <x>736</x>
+     <y>573</y>
+     <width>450</width>
+     <height>165</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+  </widget>
+  <widget class="QSlider" name="s_prey_num">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>48</y>
+     <width>225</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <number>5</number>
+   </property>
+   <property name="maximum">
+    <number>100</number>
+   </property>
+   <property name="singleStep">
+    <number>5</number>
+   </property>
+   <property name="pageStep">
+    <number>5</number>
+   </property>
+   <property name="value">
+    <number>20</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="tickPosition">
+    <enum>QSlider::TicksAbove</enum>
+   </property>
+   <property name="tickInterval">
+    <number>5</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_10">
+   <property name="geometry">
+    <rect>
+     <x>22</x>
+     <y>44</y>
+     <width>49</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Number</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lb_prey_num">
+   <property name="geometry">
+    <rect>
+     <x>314</x>
+     <y>48</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Adobe Devanagari</family>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 170, 0);</string>
+   </property>
+   <property name="text">
+    <string>20</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pb_stop">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>18</x>
+     <y>358</y>
+     <width>159</width>
+     <height>65</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>OpenHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton:disabled{
+border-color: rgb(188, 188, 188);
+color:rgb(188, 188, 188);
+border-width: 2px;
+border-style:solid;
+border-radius:10px;}
+
+QPushButton{
+border-color: rgb(85, 170, 255);
+border-width: 2px;
+border-style:solid;
+border-radius:10px;}
+</string>
+   </property>
+   <property name="text">
+    <string>Stop</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="cb_p_4">
+   <property name="geometry">
+    <rect>
+     <x>734</x>
+     <y>558</y>
+     <width>453</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(255, 170, 0);</string>
+   </property>
+   <item>
+    <property name="text">
+     <string>Prey-AverageEnergy</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Predator-Energy</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Prey-DeathRatio</string>
+    </property>
+   </item>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
