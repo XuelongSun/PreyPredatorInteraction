@@ -1,0 +1,55 @@
+@import url(https://fonts.googleapis.com/css?family=Architects+Daughter);
+
+body {
+    /* background:#8c0000; */
+    background-color:black; 
+    /* font-family: 'Economica', sans-serif; */
+    font-family: 'Architects Daughter', sans-serif;
+    /* text-transform: uppercase; */
+    letter-spacing: 0.1em;
+    -webkit-backface-visibility: hidden;
+    color:antiquewhite;
+    
+}
+
+.title{
+    color:wheat;
+    font-size: xx-large;
+    font-weight: bold;
+    line-height: 200px;
+    text-align: start;
+}
+
+#arena-image{
+    height: 520px;
+    width: 520px;
+    border: 2px solid rgb(230, 194, 129);
+    margin: 10px 0px;
+    padding: 0px;
+    align-items: center;
+}
+
+.rangeValue{
+    color: rgb(230, 194, 129);
+}
+
+.plot{
+    height: 260px;
+    /* border: 2px solid rgb(230, 194, 129);
+    border-radius: 5px; */
+    margin: 10px 0px;
+}
+
+#range-label{
+    color: aliceblue;
+    text-align: start;
+}
+
+#status{
+    color:aliceblue;
+    font-size: small;
+    text-align: start;
+    height: 240px;
+    border: 1px solid rgb(233, 197, 131);
+    white-space: pre-wrap;
+}
