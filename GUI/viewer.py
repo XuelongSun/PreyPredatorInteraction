@@ -99,6 +99,9 @@ class Window(QMainWindow, Ui_mainWindow):
             y = np.convolve(np.array(data['death_ratio']), np.ones(10) / 10, mode='valid')
             self.data_plots[3].setData(x = np.array(range(len(y))),
                                        y = y)
+        elif self.cb_p_4.currentText() == "Predator-PheroRadius":
+            self.data_plots[3].setData(x = np.array(range(len(data['pd_phero_ratio']))),
+                                       y = np.array(data['pd_phero_ratio']))
         
         # plot 2
         if self.cb_p_2.currentText() == "Prey-FGatherDistribution":
@@ -121,9 +124,7 @@ class Window(QMainWindow, Ui_mainWindow):
             d_ = data['f_avoid'][-1]
             t_d,_ = np.histogram(d_, bins=20, range=(0.01, 10.01))
             self.data_plots[2].setOpts(x=np.linspace(0.01, 10.01, 20),height=t_d, width=0.5)
-
-            
-        
+                
     def system_logger(self, log, log_type='info'):
         time_e = datetime.datetime.now()
         time_e_s = datetime.datetime.strftime(time_e, '%Y-%m-%d %H:%M:%S')[-8:]

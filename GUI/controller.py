@@ -37,7 +37,7 @@ class Controller:
         self.initial_paras = (aw, num, pw, ps)
         
         self.sim_data = {'energy':[], 'f_gather':[], 'f_avoid':[], 'pd_energy':[],
-                         'death_ratio':[]}
+                         'death_ratio':[], 'pd_phero_ratio':[]}
         self.sim_data['prey_num'] = num
         
 
@@ -107,7 +107,7 @@ class Controller:
         self.sim_already_started = False
         self.window.pb_stop.setEnabled(False)
         self.sim_data = {'energy':[], 'f_gather':[], 'f_avoid':[], 'pd_energy':[],
-                         'death_ratio':[]}
+                         'death_ratio':[], 'pd_phero_ratio':[]}
         num = self.window.s_prey_num.value()
         self.sim_data['prey_num'] = num
         self.window.pb_start.setText("Start")

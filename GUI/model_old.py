@@ -329,7 +329,7 @@ class Prey(Agent):
             x = np.mean(np.where(img_f > 1)[1])
             self.angular_velocity = (IMAGE_WIDTH/2 - x) / IMAGE_WIDTH * (np.pi/4)
         elif self.state == 'stop':
-            self.energy += 1.2 * dt / 1000
+            self.energy += 2 * dt / 1000
             self.linear_velocity = 0 
             self.angular_velocity = 0
         elif self.state == 'wandering':
@@ -344,22 +344,15 @@ class Prey(Agent):
 class Predator(Agent):
     def __init__(self, scene3d, render3d, uuid, init_heading, init_position, speed=4):
         super().__init__(scene3d, render3d, uuid, init_heading, init_position, color=(200, 0, 20))
-        self.phero_radius = 20
+        self.phero_radius = 10
         self.linear_velocity = speed
         self.goal_defined = False
-        self.energy = 100
-        self.energy_old = self.energy
+        self.energy = 16
         self.state = 'hunting'
-        self.energy_diff = 0
-        self.energy_diff_old = 0
-        self.phero_radius_diff = 2
-        self.phero_radius_update_time = 0
-        self.stop_energy_threshold = 100
         
-    def update(self, boundary, cluster, num_prey, dt, energy):
-        self.energy += (energy - self.phero_radius * dt / 4000)
-        
-        if self.energy >= self.stop_energy_threshold:
+    def update(self, boundary, cluster, num_prey):
+        self.energy -= self.energy*0.0001
+        if 18 <= self.energy:
             self.state = 'stopping'
             return
         else:
@@ -385,26 +378,7 @@ class Predator(Agent):
                         self.angular_velocity = 0
             self.last_cluster_prey_num = len(v1)
             self.update_motion(boundary, None)
-            
-            # evolve phero radius
-            if self.phero_radius_update_time >= 100:
-                self.phero_radius_update_time = 0
-                self.energy_diff = self.energy - self.energy_old
-                self.energy_old = self.energy
-                if self.energy_diff >= self.energy_diff_old:
-                    # the previous update is good, so keep the sign of phero_radius_diff
-                    self.phero_radius += self.phero_radius_diff
-                else:
-                    # otherwise reverse the sign
-                    self.phero_radius_diff = -self.phero_radius_diff
-                    self.phero_radius += self.phero_radius_diff
-                self.energy_diff_old = self.energy_diff
-            
-            self.phero_radius_update_time += 1
-            
-            # evolve stop threshold
-            
-        self.time += dt
+
 
 class Pheromone:
     def __init__(self, width, height, dt):
@@ -705,7 +679,6 @@ class Simulator:
         prey_pos = []
         energy = []
         dead_prey_num = 0
-        energy_to_predator = 0
         self.clear_cluster_collision_info()
         for pe in self.alive_preys:
             # cluster
@@ -724,8 +697,8 @@ class Simulator:
             # update energy
             energy.append(pe.energy)
             if pe.state == 'death':
-                # if self.predators[-1].state == 'hunting':
-                #     self.predators[-1].energy += 0.4
+                if self.predators[-1].state == 'hunting':
+                    self.predators[-1].energy += 0.4
                 self.dead_preys.append(pe)
                 self.alive_preys.remove(pe)
                 dead_prey_num += 1
@@ -757,19 +730,15 @@ class Simulator:
                 # add to the lists
                 self.preys.append(t_prey)
                 self.alive_preys.append(t_prey)
-            if pe.state == 'avoiding':
-                energy_to_predator += (0.01*pe.energy)
 
         # render pheromone
         predator_pos = []
         for pd in self.predators:
             pd.update(self.environment.boundary,
-                      self.cluster, len(self.alive_preys),
-                      self.dt, energy_to_predator)
+                        self.cluster, len(self.alive_preys))
             p = world2image_coordinates_transfer(pd.position,
-                                                 self.environment.boundary)
+                                                self.environment.boundary)
             predator_pos.append(p)
-        self.pheromone_width = self.predators[-1].phero_radius
         self.environment.pheromone.update(predator_pos,
                                           self.pheromone_width,
                                           self.pheromone_inject_k)
@@ -780,8 +749,6 @@ class Simulator:
         self.debug_data['f_gather'] = [a.f_gather for a in self.alive_preys]
         self.debug_data['pd_energy'] = self.predators[-1].energy
         self.debug_data['death_ratio'] = dead_prey_num/self.dt
-        self.debug_data['pd_phero_ratio'] = self.predators[-1].phero_radius
-        self.debug_data['pd_phero_ratio'] = self.predators[-1].phero_radius
         
         self.time += self.dt
 

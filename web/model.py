@@ -367,6 +367,7 @@ class Predator(Agent):
                     px = v1[i].position[0]
                     py = v1[i].position[1]
                     goal_dir = np.arctan2(self.position[1]-py, self.position[0]-px)
+                    self.angular_velocity = goal_dir - self.heading + np.pi
                 else:
                     if len(v1) >= self.last_cluster_prey_num+2:
                         px = np.array([a.position[0] for a in v1]).mean()

@@ -905,6 +905,11 @@ border-radius:10px;}
      <string>Prey-DeathRatio</string>
     </property>
    </item>
+   <item>
+    <property name="text">
+     <string>Predator-PheroRadius</string>
+    </property>
+   </item>
   </widget>
  </widget>
  <resources/>

@@ -361,6 +361,7 @@ class Ui_mainWindow(object):
         self.cb_p_4.addItem("")
         self.cb_p_4.addItem("")
         self.cb_p_4.addItem("")
+        self.cb_p_4.addItem("")
 
         self.retranslateUi(mainWindow)
         self.cb_p_3.setCurrentIndex(1)
@@ -399,3 +400,4 @@ class Ui_mainWindow(object):
         self.cb_p_4.setItemText(0, _translate("mainWindow", "Prey-AverageEnergy"))
         self.cb_p_4.setItemText(1, _translate("mainWindow", "Predator-Energy"))
         self.cb_p_4.setItemText(2, _translate("mainWindow", "Prey-DeathRatio"))
+        self.cb_p_4.setItemText(3, _translate("mainWindow", "Predator-PheroRadius"))

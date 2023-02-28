@@ -84,8 +84,8 @@ const ctx = canvas.getContext('2d');
 
 
 // var socket = io.connect();
-// var socket = io.connect("http://192.168.3.99:5000");
-const socket = io.connect("http://192.168.31.141:8080");
+var socket = io.connect("http://192.168.3.99:8080");
+// const socket = io.connect("http://192.168.31.141:8080");
 // const socket = io.connect('http://localhost:8080');
 
 socket.on("update_plot", function (results) {
